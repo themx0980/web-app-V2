@@ -6,6 +6,7 @@ from bot import LOGGER
 from bot.config import Telegram
 from bot.helper.database import Database
 from bot.helper.exceptions import InvalidHash
+from bot.helper.index import clean_title
 from bot.helper.file_size import get_readable_file_size
 from bot.server.file_properties import get_file_ids
 from bot.telegram import StreamBot
@@ -64,6 +65,7 @@ async def render_page(id, secure_hash, is_admin=False, html='', playlist='', dat
         if filename is None:
             filename = "Proper Filename is Missing"
         filename = re.sub(r'[,|_\',]', ' ', filename)
+        filename = clean_title(filename)
         if tag == 'video':
             async with aiopen(ospath.join(tpath, 'video.html')) as r:
                 poster = f"/api/thumb/{chat_id}?id={id}"
