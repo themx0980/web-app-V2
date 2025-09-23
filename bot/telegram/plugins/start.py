@@ -23,12 +23,12 @@ async def start(bot: Client, message: Message):
             try:
                 member = await bot.get_chat_member(-1001667023505, message.from_user.id)
                 if member.status in [ChatMemberStatus.LEFT, ChatMemberStatus.BANNED, ChatMemberStatus.RESTRICTED]:
-                    return await message.reply_text("Soory! You are not member of our channel")
+                    return await bot.send_message(chat_id=message.chat.id, text="Soory! You are not member of our channel")
             except errors.UserNotParticipant:
-                return await message.reply_text("Soory! You are not member of DFF UPDATE Channel")
+                return await bot.send_message(chat_id=message.chat.id, text="Soory! You are not member of DFF UPDATE channel")
             except Exception as e:
                 print(f"An error occurred: {e}")
-                return await message.reply_text("Soory! You are not member of our channel")
+                return await bot.send_message(chat_id=message.chat.id, text="Soory! You are not member of our channel")
 
             # If user passed force-sub check, process file
             usr_cmd = message.text.split("_")[-1]
