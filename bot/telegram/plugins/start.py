@@ -3,7 +3,7 @@ from bot import LOGGER
 from bot.config import Telegram
 from bot.helper.database import Database
 from bot.helper.file_size import get_readable_file_size
-from bot.helper.index import get_messages
+from bot.helper.index import get_messages, clean_title
 from bot.helper.media import is_media
 from bot.telegram import StreamBot
 from pyrogram import Client, filters
@@ -98,6 +98,7 @@ async def file_receive_handler(bot: Client, message: Message):
             title = file.file_name or message.caption or file.file_id
             title, _ = splitext(title)
             title = re.sub(r'[.,|_\',]', ' ', title)
+            title = clean_title(title)
             msg_id = message.id
             hash = file.file_unique_id[:6]
             size = get_readable_file_size(file.file_size)
