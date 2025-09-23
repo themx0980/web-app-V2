@@ -6,20 +6,31 @@ from bot.helper.file_size import get_readable_file_size
 from bot.helper.index import get_messages
 from bot.helper.media import is_media
 from bot.telegram import StreamBot
-from pyrogram import filters, Client
+from pyrogram import Client, filters
 from pyrogram.types import Message
+from pyrogram.enums import ChatMemberStatus
 from os.path import splitext
-from pyrogram.errors import FloodWait
+from pyrogram.errors import FloodWait, UserNotParticipant
 from pyrogram.enums.parse_mode import ParseMode
 from asyncio import sleep
 
 db = Database()
 
-
 @StreamBot.on_message(filters.command('start') & filters.private)
 async def start(bot: Client, message: Message):
     if "file_" in message.text:
         try:
+            try:
+                member = await bot.get_chat_member(-1001667023505, message.from_user.id)
+                if member.status in [ChatMemberStatus.LEFT, ChatMemberStatus.BANNED, ChatMemberStatus.RESTRICTED]:
+                    return await message.reply_text("Soory! You are not member of our channel")
+            except errors.UserNotParticipant:
+                return await message.reply_text("Soory! You are not member of DFF UPDATE Channel")
+            except Exception as e:
+                print(f"An error occurred: {e}")
+                return await message.reply_text("Soory! You are not member of our channel")
+
+            # If user passed force-sub check, process file
             usr_cmd = message.text.split("_")[-1]
             data = usr_cmd.split("-")
             message_id, chat_id = data[0], f"-{data[1]}"
@@ -28,7 +39,7 @@ async def start(bot: Client, message: Message):
             await message.reply_cached_media(file_id=media.file_id, caption=f'**{media.file_name}**')
         except Exception as e:
             print(f"An error occurred: {e}")
-
+    
 
 @StreamBot.on_message(filters.command('index'))
 async def start(bot: Client, message: Message):
