@@ -78,3 +78,18 @@ async def posts_file(posts, chat_id):
             </div>
 """
     return ''.join(phtml.format(chat_id=str(chat_id).replace("-100", ""), id=post["msg_id"], img=f"/api/thumb/{chat_id}?id={post['msg_id']}", title=post["title"], hash=post["hash"], size=post['size'], type=post['type']) for post in posts)
+
+def clean_title(title: str) -> str:
+    """
+    Clean file/caption titles by removing unwanted usernames and formatting.
+    """
+    if not title:
+        return ""
+
+    # Remove @username style mentions
+    title = re.sub(r'@\w+', '', title)
+    title = re.sub(r'(https?:\/\/)?t\.me\/[A-Za-z0-9_]+', '', title)
+    title = re.sub(r'[.,|_\'-]', ' ', title)
+    title = re.sub(r'\s+', ' ', title).strip()
+
+    return title
