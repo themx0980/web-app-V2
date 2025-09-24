@@ -12,6 +12,7 @@
   <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
   <link rel="stylesheet" href="https://bootswatch.com/5/<!-- Theme -->/bootstrap.min.css">
   <script disable-devtool-auto src='https://cdn.jsdelivr.net/npm/disable-devtool'></script>
+
   <style>
     body {
       height: 100vh;
@@ -64,21 +65,37 @@
     }
 
     @media (max-width: 992px) {
-      .video-player { max-width: 80%; margin: auto; }
-      .card { max-width: 80%; }
-      .navbar { padding-right: 15px; padding-left: 15px; }
+      .video-player {
+        max-width: 80%;
+        margin: auto;
+      }
+
+      .card {
+        align-items: left;
+        box-shadow: none;
+        border-radius: 0%;
+        max-width: 80%
+      }
+
+      .navbar {
+        padding-right: 15px;
+        padding-left: 15px;
+      }
     }
 
-    /* COMMENTS SECTION */
-    #comments-section { max-width: 800px; margin: 20px auto; }
-    .comment-box textarea { width: 100%; padding: 8px; border-radius: 5px; border: 1px solid #ccc; }
-    .comment-box button { margin-top: 5px; }
-    .comment, .reply { border: 1px solid #ddd; border-radius: 5px; padding: 8px; margin-bottom: 10px; }
-    .reply { margin-left: 30px; }
+    /* Comment section styles */
+    #comment-section {
+      max-width: 48%;
+      margin: 20px auto;
+    }
 
-    /* Auth modal styles */
-    .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 50; }
-    .modal-content { background: #fff; padding: 20px; border-radius: 8px; width: 100%; max-width: 400px; }
+    .auth-show {
+      display: inline-block;
+    }
+
+    .auth-hide {
+      display: none;
+    }
   </style>
 </head>
 
@@ -88,23 +105,22 @@
       <a class="navbar-brand" href="/">
         <img src="https://raw.githubusercontent.com/the-lx0980/web-app/refs/heads/main/bot/server/static/dff-logo.png" alt="Logo" height="40">
       </a>
-      <div class="d-flex">
-        <span id="user-info" class="text-white me-2">Checking auth...</span>
-        <button id="login-main-btn" class="btn btn-success btn-sm me-1 auth-show">Login</button>
-        <button id="register-main-btn" class="btn btn-warning btn-sm me-1 auth-show">Register</button>
-        <button id="logout-btn" class="btn btn-danger btn-sm auth-hide" style="display:none;">Logout</button>
+      <div class="d-flex align-items-center gap-2">
+        <!-- Login/Register buttons -->
+        <button id="login-main-btn" class="btn btn-light btn-sm auth-show">Login</button>
+        <button id="register-main-btn" class="btn btn-light btn-sm auth-show">Register</button>
+        <button id="logout-btn" class="btn btn-secondary btn-sm auth-hide"><i class="bi bi-box-arrow-left"></i> Logout</button>
+        <span id="user-info" class="ms-2 auth-hide"></span>
       </div>
     </div>
   </nav>
 
-  <!-- Video player -->
   <div class="video-player">
     <video controls crossorigin playsinline data-poster="<!-- Poster -->" id="player">
       <source src="#" type="video/mp4" />
     </video>
   </div>
 
-  <!-- File details card -->
   <div class="card bg-light mb-3" style="margin: auto; border-radius: 5px;">
     <div class="card-body">
       <h6 class="card-title">Name: <!-- Filename --></h6>
@@ -112,7 +128,6 @@
     </div>
   </div>
 
-  <!-- Player buttons -->
   <div class="container d-flex justify-content-center align-items-center" style="width: 100%; padding: 0 5px;">
     <div onclick="mx_player()" class="btn btn-primary">MX Player</div>
     <div onclick="vlc_player()" class="btn btn-primary">VLC Mobile</div>
@@ -122,44 +137,16 @@
     <div onclick="download()" class="btn btn-primary">Download</div>
   </div>
 
-  <!-- Telegram link -->
+  <div id="comment-section">
+    <h5>Comments</h5>
+    <textarea id="new-comment" class="form-control mb-2 auth-hide" rows="2" placeholder="Write a comment..."></textarea>
+    <button id="post-comment-btn" class="btn btn-primary mb-3 auth-hide">Post Comment</button>
+    <div id="comments"></div>
+    <button id="load-more-btn" class="btn btn-secondary mt-2 hidden">Load More</button>
+  </div>
+
   <div class="text-center">
     <a href="https://t.me/dff_updates" target="_blank" class="btn btn-primary inputBox">Telegram Channel</a>
-  </div>
-
-  <!-- COMMENTS SECTION -->
-  <div id="comments-section">
-    <div class="comment-box">
-      <textarea id="new-comment" placeholder="Write a comment..."></textarea>
-      <button id="post-comment-btn" class="btn btn-primary">Post Comment</button>
-    </div>
-    <div id="comments"></div>
-    <button id="load-more-btn" class="btn btn-secondary mt-2">Load More</button>
-  </div>
-
-  <!-- LOGIN MODAL -->
-  <div id="login-modal" class="modal-bg">
-    <div class="modal-content">
-      <h3>Login</h3>
-      <input id="login-email" type="email" placeholder="Email" class="form-control mb-2">
-      <input id="login-pass" type="password" placeholder="Password" class="form-control mb-2">
-      <button id="login-email-btn" class="btn btn-success w-100 mb-2">Login with Email</button>
-      <button id="login-google-btn" class="btn btn-danger w-100 mb-2">Login with Google</button>
-      <button onclick="closeModal('login-modal')" class="btn btn-secondary w-100">Cancel</button>
-    </div>
-  </div>
-
-  <!-- REGISTER MODAL -->
-  <div id="register-modal" class="modal-bg">
-    <div class="modal-content">
-      <h3>Register</h3>
-      <input id="reg-email" type="email" placeholder="Email" class="form-control mb-2">
-      <input id="reg-pass" type="password" placeholder="Password" class="form-control mb-2">
-      <button id="register-email-btn" class="btn btn-warning w-100 mb-2">Register with Email</button>
-      <button id="register-google-btn" class="btn btn-danger w-100 mb-2">Register with Google</button>
-      <button id="register-guest-btn" class="btn btn-secondary w-100 mb-2">Continue as Guest</button>
-      <button onclick="closeModal('register-modal')" class="btn btn-secondary w-100">Cancel</button>
-    </div>
   </div>
 
   <footer class="footer mt-auto py-3 text-muted text-center" style="color: white;">
@@ -168,7 +155,7 @@
     </div>
   </footer>
 
-  <!-- EXISTING PLAYER JS -->
+  <!-- Plyr + Video JS -->
   <script>
     const videolink = window.location.href;
     const url = new URL(videolink);
@@ -178,6 +165,7 @@
     const idParam = new URLSearchParams(window.location.search).get('id');
     const hashParam = new URLSearchParams(window.location.search).get('hash');
     const encodedName = encodeURIComponent('<!-- Filename -->');
+
     const downloadlink = `${domainUrl}/${videoId}/${encodedName}?id=${idParam}&hash=${hashParam}`;
 
     const player = new Plyr('#player', {
@@ -187,32 +175,61 @@
       loop: { active: false },
     });
 
-    function mx_player() { window.location.href = `intent:${downloadlink}#Intent;package=com.mxtech.videoplayer.ad;end`; }
-    function vlc_player() { window.location.href = `vlc://${downloadlink}`; }
-    function km_player() { window.location.href = `intent:${downloadlink}#Intent;package=com.kmplayer;end`; }
-    function download() { window.location.href = downloadlink; }
+    function mx_player() {
+      const openDownloadLink = downloadlink;
+      const openMx = `intent:${openDownloadLink}#Intent;package=com.mxtech.videoplayer.ad;end`;
+      window.location.href = openMx;
+    }
+
+    function vlc_player() {
+      const openDownloadLink = downloadlink;
+      const openVlc = `vlc://${openDownloadLink}`;
+      window.location.href = openVlc;
+    }
+
+    function km_player() {
+      const openDownloadLink = downloadlink;
+      const openKmplayer = `intent:${openDownloadLink}#Intent;package=com.kmplayer;end`;
+      window.location.href = openKmplayer;
+    }
+
+    function download() {
+      const openDownloadLink = downloadlink;
+      window.location.href = openDownloadLink;
+    }
+
     function get_file() {
       const regex = /(\d+)\?id=(\d+)&/;
       const match = videolink.match(regex);
       if (match) {
         const chatId = "-100" + match[1];
         const messageId = match[2];
-        window.location.href = `https://t.me/<!-- Username -->?start=file_${messageId}${chatId}`;
+        const openTG = `https://t.me/<!-- Username -->?start=file_${messageId}${chatId}`;
+        window.location.href = openTG;
       }
     }
+
     function copyUrl() {
-      navigator.clipboard.writeText(downloadlink)
+      const url = downloadlink;
+      navigator.clipboard.writeText(url)
         .then(() => { alert('URL copied to clipboard!'); })
         .catch((error) => { console.error('Failed to copy URL: ', error); });
     }
+
     function updateVideoSource() {
-      document.getElementById('player').src = downloadlink;
+      const videoElement = document.getElementById('player');
+      const newSrc = downloadlink;
+      videoElement.src = newSrc;
     }
-    window.onload = updateVideoSource;
+
+    window.onload = function () {
+      updateVideoSource();
+    };
   </script>
 
-  <!-- COMMENTS JS -->
-  <script type="module" src="comments.js"></script>
+  <!-- Import comments.js -->
+  <script type="module" src="./comments.js"></script>
+
 </body>
 
 </html>
