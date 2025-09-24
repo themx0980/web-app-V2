@@ -1,4 +1,3 @@
-// comments.js
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getAuth, GoogleAuthProvider, onAuthStateChanged,
@@ -9,10 +8,10 @@ import {
   getFirestore, collection, doc,
   addDoc, updateDoc, deleteDoc,
   serverTimestamp, query, orderBy,
-  limit, startAfter, getDocs, arrayUnion, arrayRemove, getDoc
+  limit, startAfter, getDocs, getDoc,
+  arrayUnion, arrayRemove
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-// ------------------- CONFIG -------------------
 const firebaseConfig = {
   apiKey: "AIzaSyDNFfGuxhG1QG55vDNhEyPYtfD79ZByvsM",
   authDomain: "dff-stream.firebaseapp.com",
@@ -21,14 +20,14 @@ const firebaseConfig = {
   messagingSenderId: "723534931442",
   appId: "1:723534931442:web:2593764e5ce46000c2776b"
 };
-const OWNER_UID = "uivcffgjjj"; // your admin UID
+const OWNER_UID = "uivcffgjjj";
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const gp = new GoogleAuthProvider();
 
-// ------------------- ELEMENTS -------------------
+// Elements
 const loginBtn = document.getElementById("login-main-btn"),
       registerBtn = document.getElementById("register-main-btn"),
       logoutBtn = document.getElementById("logout-btn"),
@@ -38,11 +37,15 @@ const loginBtn = document.getElementById("login-main-btn"),
       commentsDiv = document.getElementById("comments"),
       loadMoreBtn = document.getElementById("load-more-btn");
 
-// ------------------- MODALS -------------------
+// Get videoId from URL
+const videoId = new URLSearchParams(window.location.search).get('id');
+if (!videoId) alert("Video ID missing! Comments will not work.");
+
+// Modal handlers
 window.closeModal = id => document.getElementById(id).classList.add("hidden");
 const openModal = id => document.getElementById(id).classList.remove("hidden");
 
-// ------------------- AUTH HANDLERS -------------------
+// Auth handlers
 loginBtn.onclick = () => openModal("login-modal");
 registerBtn.onclick = () => openModal("register-modal");
 logoutBtn.onclick = () => signOut(auth);
@@ -82,11 +85,9 @@ document.getElementById("register-guest-btn").onclick = async () => {
   } catch(e) { alert(e.message); }
 };
 
-// ------------------- STATE -------------------
 let currentUser = null, lastVisible = null;
 const PAGE_SIZE = 10;
 
-// ------------------- AUTH STATE -------------------
 onAuthStateChanged(auth, user => {
   currentUser = user;
   if (user) {
@@ -101,7 +102,6 @@ onAuthStateChanged(auth, user => {
   loadComments(true);
 });
 
-// ------------------- HELPER -------------------
 function timeAgo(ts) {
   const now = Date.now(), secs = Math.floor((now - ts.toMillis()) / 1000);
   if (secs < 60) return `${secs}s ago`;
@@ -110,12 +110,12 @@ function timeAgo(ts) {
   return `${Math.floor(h / 24)}d ago`;
 }
 
-// ------------------- POST COMMENT -------------------
+// Post comment
 postCommentBtn.onclick = async () => {
   if (!currentUser) return alert("Please login first");
   const txt = newCommentEl.value.trim();
   if (!txt) return;
-  await addDoc(collection(db, "comments"), {
+  await addDoc(collection(db, "videos", videoId, "comments"), {
     text: txt,
     uid: currentUser.uid,
     name: currentUser.displayName || "Anonymous",
@@ -129,14 +129,15 @@ postCommentBtn.onclick = async () => {
   loadComments(true);
 };
 
-// ------------------- LOAD COMMENTS -------------------
+// Load comments
 async function loadComments(reset = false) {
+  if (!videoId) return;
   if (reset) {
     commentsDiv.innerHTML = "";
     lastVisible = null;
   }
-  let q = query(collection(db, "comments"), orderBy("created", "desc"), limit(PAGE_SIZE));
-  if (lastVisible) q = query(collection(db, "comments"), orderBy("created", "desc"), startAfter(lastVisible), limit(PAGE_SIZE));
+  let q = query(collection(db, "videos", videoId, "comments"), orderBy("created", "desc"), limit(PAGE_SIZE));
+  if (lastVisible) q = query(collection(db, "videos", videoId, "comments"), orderBy("created", "desc"), startAfter(lastVisible), limit(PAGE_SIZE));
   const snap = await getDocs(q);
   if (!snap.empty) {
     lastVisible = snap.docs[snap.docs.length - 1];
@@ -144,12 +145,13 @@ async function loadComments(reset = false) {
   }
   loadMoreBtn.classList.toggle("hidden", snap.size < PAGE_SIZE);
 }
+
 loadMoreBtn.onclick = () => loadComments();
 
-// ------------------- LOAD REPLIES -------------------
 async function loadReplies(parentId, container, reset = false) {
+  if (!videoId) return;
   if (reset) container.innerHTML = "";
-  const snap = await getDocs(query(collection(db, "comments", parentId, "replies"), orderBy("created", "asc")));
+  const snap = await getDocs(query(collection(db, "videos", videoId, "comments", parentId, "replies"), orderBy("created", "asc")));
   const replies = snap.docs.map(d => ({ id: d.id, ...d.data() }));
   replies.slice(0, 5).forEach(r => renderReply(r, container));
   if (replies.length > 5) {
@@ -164,7 +166,6 @@ async function loadReplies(parentId, container, reset = false) {
   }
 }
 
-// ------------------- RENDER REPLY -------------------
 function renderReply({ id, name, text, created, photoURL, uid }, container) {
   const isAdmin = uid === OWNER_UID;
   const avatar = photoURL || '/default-avatar.png';
@@ -174,9 +175,7 @@ function renderReply({ id, name, text, created, photoURL, uid }, container) {
     <img src="${avatar}" class="w-6 h-6 rounded-full ${isAdmin ? 'ring-2 ring-yellow-400' : ''}" alt="${name}" />
     <div class="flex-1">
       <div class="flex justify-between">
-        <p class="text-sm font-semibold ${isAdmin ? 'text-yellow-600' : ''}">
-          ${name}${isAdmin ? ' ★' : ''}
-        </p>
+        <p class="text-sm font-semibold ${isAdmin ? 'text-yellow-600' : ''}">${name}${isAdmin ? ' ★' : ''}</p>
         <p class="text-xs text-gray-500">${created ? timeAgo(created) : ''}</p>
       </div>
       <p class="text-sm ml-1">${text}</p>
@@ -184,7 +183,6 @@ function renderReply({ id, name, text, created, photoURL, uid }, container) {
   container.appendChild(el);
 }
 
-// ------------------- RENDER COMMENT -------------------
 function renderComment(id, data) {
   const isOwner = currentUser?.uid === data.uid;
   const isAdmin = currentUser?.uid === OWNER_UID;
@@ -220,23 +218,20 @@ function renderComment(id, data) {
     <div class="ml-6 mt-2 replies"></div>
   `;
 
-  // ------------------- ACTION HANDLER -------------------
   const handleAction = async (action) => {
-    if (!currentUser) return alert("Login first");
-    const ref = doc(db, "comments", id);
-    const snap = await getDoc(ref);
-    const d = snap.data();
-
+    if (!videoId) return;
+    const commentRef = doc(db, "videos", videoId, "comments", id);
     if (action === 'like' || action === 'dislike') {
+      if (!currentUser) return alert("Login first");
       const fieldAdd = action === 'like' ? 'likes' : 'dislikes';
       const fieldRem = action === 'like' ? 'dislikes' : 'likes';
+      const snap = await getDoc(commentRef);
+      const d = snap.data();
       if (d[fieldAdd].includes(currentUser.uid)) {
-        await updateDoc(ref, { [fieldAdd]: arrayRemove(currentUser.uid) });
+        await updateDoc(commentRef, { [fieldAdd]: arrayRemove(currentUser.uid) });
       } else {
-        if (d[fieldRem].includes(currentUser.uid)) {
-          await updateDoc(ref, { [fieldRem]: arrayRemove(currentUser.uid) });
-        }
-        await updateDoc(ref, { [fieldAdd]: arrayUnion(currentUser.uid) });
+        if (d[fieldRem].includes(currentUser.uid)) await updateDoc(commentRef, { [fieldRem]: arrayRemove(currentUser.uid) });
+        await updateDoc(commentRef, { [fieldAdd]: arrayUnion(currentUser.uid) });
       }
       loadComments(true);
     }
@@ -245,12 +240,16 @@ function renderComment(id, data) {
     }
     else if (action === 'edit') {
       const t = prompt("Edit comment:", data.text);
-      if (t != null) await updateDoc(ref, { text: t, edited: true });
-      loadComments(true);
+      if (t != null) {
+        await updateDoc(commentRef, { text: t, edited: true });
+        loadComments(true);
+      }
     }
     else if (action === 'delete') {
-      if (confirm("Delete this comment?")) await deleteDoc(ref);
-      loadComments(true);
+      if (confirm("Delete this comment?")) {
+        await deleteDoc(commentRef);
+        loadComments(true);
+      }
     }
   };
 
@@ -259,14 +258,15 @@ function renderComment(id, data) {
     if (act) btn.onclick = () => handleAction(act);
   });
 
-  // ------------------- REPLY POST -------------------
   const replyForm = div.querySelector('.reply-form');
   const repliesC = div.querySelector('.replies');
+
   div.querySelector('.post-reply-btn').onclick = async () => {
+    if (!currentUser || !videoId) return alert("Login first");
     const ta = replyForm.querySelector("textarea");
     const txt = ta.value.trim();
     if (!txt) return;
-    await addDoc(collection(db, "comments", id, "replies"), {
+    await addDoc(collection(db, "videos", videoId, "comments", id, "replies"), {
       text: txt,
       uid: currentUser.uid,
       name: currentUser.displayName || "Guest",
@@ -280,4 +280,4 @@ function renderComment(id, data) {
 
   loadReplies(id, repliesC, true);
   commentsDiv.appendChild(div);
-               }
+}
